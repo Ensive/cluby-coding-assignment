@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 
 // source code
 import App from './App';
@@ -7,11 +8,14 @@ import reportWebVitals from './reportWebVitals';
 
 // styles
 import 'reset-css/reset.css';
+import './global/index.css';
 
 ReactDOM.render(
-  <React.StrictMode>
+  // <React.StrictMode>
+  <Router>
     <App />
-  </React.StrictMode>,
+  </Router>,
+  // </React.StrictMode>,
   document.getElementById('root'),
 );
 
