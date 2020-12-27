@@ -1,26 +1,40 @@
-import React from 'react';
-import logo from '../images/logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+import { API_CLUBY_KEY, API_HOST_URL } from '../global/constants';
+import CarList from '../components/Car/CarList';
 
 function App() {
+  const [login, setLogin] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    loginUser();
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+    <div>
+      <header>
+        <h1>Cluby Coding Assignment</h1>
       </header>
+
+      <div>{login ? <CarList /> : 'Authenticating...'}</div>
     </div>
   );
+
+  async function loginUser() {
+    const response = await axios.get(`${API_HOST_URL}/authentication/test`, {
+      headers: {
+        ClubyApiKey: API_CLUBY_KEY,
+      },
+    });
+
+    if (response.data.result.toLowerCase() === 'ok') {
+      setLogin(true);
+    } else {
+      setError(true);
+    }
+  }
 }
 
 export default App;
