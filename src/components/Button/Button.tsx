@@ -7,19 +7,27 @@ interface ButtonProps {
   variant?: 'text' | 'outlined' | 'contained';
   children: ReactChildren | string;
   style?: CSSProperties;
-  className: string;
+  className?: string;
   onClick?: React.MouseEventHandler;
   disabled?: boolean;
+  icon?: React.ReactNode;
+  size?: 'small' | 'medium' | 'large';
+  type?: 'button' | 'submit' | 'reset';
+  form?: string;
 }
 
 export default function Button({
   variant,
   color,
   children,
-  style,
+  style = { textTransform: 'initial' },
   className,
   onClick,
   disabled,
+  icon,
+  size,
+  type = 'button',
+  form,
 }: ButtonProps): JSX.Element {
   const buttonProps = {
     variant: variant || 'contained',
@@ -28,7 +36,15 @@ export default function Button({
     className,
     onClick,
     disabled,
+    startIcon: icon,
+    size,
+    type,
+    form,
   };
 
-  return <MuiButton {...buttonProps}>{children}</MuiButton>;
+  return (
+    <MuiButton {...buttonProps} disableElevation>
+      {children}
+    </MuiButton>
+  );
 }

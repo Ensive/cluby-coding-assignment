@@ -4,6 +4,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 
 // source code
 import App from './App';
+import AlertProvider from './components/AlertProvider';
 import reportWebVitals from './reportWebVitals';
 
 // styles
@@ -13,7 +14,9 @@ import './global/index.css';
 ReactDOM.render(
   // <React.StrictMode>
   <Router>
-    <App />
+    <AlertProvider>
+      <App />
+    </AlertProvider>
   </Router>,
   // </React.StrictMode>,
   document.getElementById('root'),

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Switch, Route, useHistory } from 'react-router-dom';
+import { useAlert } from 'react-alert';
 import axios from 'axios';
 
 // material
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
-import Alert from '@material-ui/lab/Alert';
 import InputLabel from '@material-ui/core/InputLabel';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
@@ -14,30 +14,9 @@ import FormControl from '@material-ui/core/FormControl';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 // source
-import { API_CLUBY_KEY, API_HOST_URL } from '../global/constants';
+import { API_HOST_URL, authHeadersRequestConfig } from '../global/constants';
 import CarList from '../domains/Car/CarList';
 import Button from '../components/Button';
-
-// TODO: move out to a separate file (config/auth)
-const requestConfig = {
-  headers: {
-    ClubyApiKey: API_CLUBY_KEY,
-  },
-};
-
-interface Schema {
-  id: string;
-  title: string;
-  fields: Array<{
-    id: string;
-    title: string;
-    validationRegex: RegExp;
-  }>;
-}
-
-// interface UuidSchema {}
-// interface QuestionnaireSchema {}
-// interface CarsSchema {}
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -46,34 +25,31 @@ const useStyles = makeStyles((theme: Theme) =>
       margin: `${theme.spacing(2)}px 0 0`,
       padding: '0 20px',
     },
-    alert: {
-      margin: `0 0 ${theme.spacing(2)}px`,
-      maxWidth: 600,
-    },
     schemaFormControl: {
       minWidth: 200,
-      marginBottom: theme.spacing(2),
+      marginBottom: theme.spacing(4),
     },
     schemaSelect: {
-      // fontSize: 20,
-      // height: 46,
     },
   }),
 );
 
+// TODO: update auth names to "api key validation" names
 export default function App(): JSX.Element {
   // TODO: move state along with components into independent components (local state)
   const [login, setLogin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
-  // todo: move
-  const [alert, setAlert] = useState<boolean>(false);
   const [schema, setSchema] = useState<string>('none');
 
+  const alert = useAlert();
   const history = useHistory();
   const classes = useStyles();
 
   useEffect(() => {
+    // TODO: delete,
+    // setLogin(true);
+    // setSchema('cars');
+
     if (schema === 'none') {
       history.push('/');
     }
@@ -88,8 +64,6 @@ export default function App(): JSX.Element {
       </AppBar>
 
       <div className={classes.container}>
-        {login && renderAuthSuccess()}
-        {error && renderError()}
         {login ? renderSchema() : renderAuthenticateButton()}
       </div>
     </>
@@ -102,24 +76,8 @@ export default function App(): JSX.Element {
         onClick={handleAuthenticateClick}
         className={classes.authenticateButton}
       >
-        {loading ? 'Authenticating...' : 'Authenticate'}
+        {loading ? 'Validating API key...' : 'Check API key'}
       </Button>
-    );
-  }
-
-  function renderAuthSuccess() {
-    return (
-      <Alert className={classes.alert} severity="success">
-        Authentication successful
-      </Alert>
-    );
-  }
-
-  function renderError() {
-    return (
-      <Alert className={classes.alert} severity="error">
-        {error}
-      </Alert>
     );
   }
 
@@ -129,7 +87,7 @@ export default function App(): JSX.Element {
         {renderSchemaSelect()}
         <Switch>
           <Route exact path="/cars">
-            Car Schema
+            <CarList />
           </Route>
           <Route exact path="/uuid">
             Uuid Schema
@@ -145,7 +103,7 @@ export default function App(): JSX.Element {
   function renderSchemaSelect() {
     return (
       <div>
-        <FormControl variant="filled" className={classes.schemaFormControl}>
+        <FormControl className={classes.schemaFormControl} focused size="small">
           <InputLabel id="schema-select-label">Current schema</InputLabel>
           <Select
             className={classes.schemaSelect}
@@ -181,16 +139,18 @@ export default function App(): JSX.Element {
     try {
       const response = await axios.get(
         `${API_HOST_URL}/authentication/test`,
-        requestConfig,
+        authHeadersRequestConfig,
       );
 
       if (response.data.result.toLowerCase() === 'ok') {
+        alert.success('API key is valid');
         setLogin(true);
       } else if (response.data.error) {
-        setError(response.data.error);
+        alert.error(`Error: ${response.data.error}`);
+        // TODO: ask your server administrator to provide valid API key (message)
       }
     } catch (e) {
-      setError('Something went wrong. Access denied');
+      alert.error('Something went wrong. Try again, please');
     } finally {
       setLoading(false);
     }
