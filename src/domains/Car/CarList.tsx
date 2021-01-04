@@ -1,57 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import { useAlert } from 'react-alert';
-import clsx from 'clsx';
 
 // material
 import Grid from '@material-ui/core/Grid';
 import CircularProgress from '@material-ui/core/CircularProgress';
-import Box from '@material-ui/core/Box';
 import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
-import SaveIcon from '@material-ui/icons/Save';
-import HistoryIcon from '@material-ui/icons/History';
-import useMediaQuery from '@material-ui/core/useMediaQuery';
-import {
-  createStyles,
-  makeStyles,
-  Theme,
-  useTheme,
-} from '@material-ui/core/styles';
 
 // source
 import { API_HOST_URL, authHeadersRequestConfig } from '../../global/constants';
-import Button from '../../components/Button';
 import SchemaForm from '../../components/SchemaForm';
 import CarCard from './CarCard';
 import type { Schema } from '../../global/types';
 import type { CarFormValidation, ICar } from './types';
-
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    buttonsContainer: {
-      marginBottom: theme.spacing(2),
-    },
-    saveChangesButton: {
-      marginLeft: 'auto',
-    },
-    addCarButton: {
-      marginLeft: theme.spacing(1),
-    },
-    revertChangesButton: {
-      marginLeft: theme.spacing(1),
-    },
-    mobileButton: {
-      margin: `0 0 ${theme.spacing(1)}px`,
-      '&:last-child': {
-        margin: 0,
-      },
-    },
-    addCarFabButton: {
-      // margin: '16px 0 0 16px',
-    },
-  }),
-);
+import SchemaActions from '../../components/SchemaActions';
 
 // TODO: shall we optimize this?
 // in memory values, serves as intermediate state.
@@ -60,9 +23,6 @@ let initialCarList: ICar[] = [];
 let carFormsValidationObject: CarFormValidation = {};
 
 export default function CarList() {
-  const theme = useTheme();
-  const matchesXs = useMediaQuery(theme.breakpoints.down('xs'));
-  const classes = useStyles();
   const alert = useAlert();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -95,50 +55,12 @@ export default function CarList() {
   // TODO: shall we use react transitions for card appearing?
   return (
     <>
-      <Box
-        display={matchesXs ? 'block' : 'flex'}
-        className={classes.buttonsContainer}
-      >
-        <Button
-          fullWidth={matchesXs}
-          className={clsx(classes.saveChangesButton, {
-            [classes.mobileButton]: matchesXs,
-          })}
-          icon={saveInProgress ? undefined : <SaveIcon />}
-          onClick={handleCarListSave}
-          disabled={saveInProgress}
-        >
-          {saveInProgress ? (
-            <CircularProgress size={24} color="inherit" disableShrink />
-          ) : (
-            'Save changes'
-          )}
-        </Button>
-        <Button
-          fullWidth={matchesXs}
-          color="default"
-          className={clsx(classes.addCarButton, {
-            [classes.mobileButton]: matchesXs,
-          })}
-          icon={<AddIcon />}
-          onClick={handleAddCarClick}
-          disabled={saveInProgress}
-        >
-          New Car
-        </Button>
-        <Button
-          fullWidth={matchesXs}
-          color="default"
-          className={clsx(classes.revertChangesButton, {
-            [classes.mobileButton]: matchesXs,
-          })}
-          icon={<HistoryIcon />}
-          onClick={handleRevertChanges}
-          disabled={saveInProgress}
-        >
-          Revert Changes
-        </Button>
-      </Box>
+      <SchemaActions
+        saveInProgress={saveInProgress}
+        onCarListSave={handleCarListSave}
+        onAddCarClick={handleAddCarClick}
+        onRevertChanges={handleRevertChanges}
+      />
       <Grid container spacing={2}>
         {carList.map((car, index) => {
           // TODO: clean up form id
@@ -174,12 +96,7 @@ export default function CarList() {
   function renderAddCarButton() {
     return (
       <Grid item xs={12} sm={6} md={6} lg={4} xl={3}>
-        <Fab
-          size="small"
-          className={classes.addCarFabButton}
-          color="primary"
-          onClick={handleAddCarClick}
-        >
+        <Fab size="small" color="primary" onClick={handleAddCarClick}>
           <AddIcon />
         </Fab>
       </Grid>
@@ -215,7 +132,7 @@ export default function CarList() {
     setCarList([...initialCarList]);
   }
 
-  function handleCarListSave(e: React.MouseEvent<HTMLButtonElement>) {
+  function handleCarListSave() {
     if (checkAllFormsValid(carFormsValidationObject)) {
       saveCarList(editedCarList);
     } else {
