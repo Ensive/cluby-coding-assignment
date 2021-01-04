@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Formik, FormikProps, FormikValues, FormikHelpers } from 'formik';
+import { Form, Formik, FormikProps, FormikValues } from 'formik';
 // TODO: shall we optimize yup imports?
 import * as yup from 'yup';
 
@@ -19,13 +19,17 @@ const useStyles = makeStyles((theme: Theme) =>
 
 interface SchemaFormProps {
   schema: Schema;
-  onSubmit: (
-    values: FormikValues,
-    formikHelpers: FormikHelpers<FormikValues>,
-  ) => void | Promise<any>;
-  initialValues?: any;
+  initialValues: {
+    carModel: string;
+    licensePlate: string;
+  };
   // TODO: delete formId usage
   formId: string;
+  // updateCarList: (newCar: { [p: string]: any }, carIndex: number) => void;
+  // TODO: typescript
+  updateCarList: any;
+  carIndex: number;
+  isDisabled: boolean;
 }
 
 export default function SchemaForm(props: SchemaFormProps) {
@@ -39,25 +43,26 @@ export default function SchemaForm(props: SchemaFormProps) {
     <Formik
       validationSchema={validationSchema}
       initialValues={initialValues}
-      // TODO: delete?
-      onSubmit={props.onSubmit}
+      // no op
+      onSubmit={(values) => {
+        // TODO: delete
+        console.log('values : >>', values);
+      }}
     >
       {({
         values,
         errors,
         touched,
         handleChange,
-        isSubmitting,
+        handleBlur,
       }: FormikProps<FormikValues>) => {
         const textFieldProps: TextFieldProps = {
           className: classes.textField,
           variant: 'filled',
-          disabled: isSubmitting,
+          disabled: props.isDisabled,
           fullWidth: true,
-          onChange: handleChange,
         };
 
-        // TODO: renderFunction for field ???
         return (
           <Form id={props.formId}>
             {props.schema.fields.map((field) => {
@@ -72,13 +77,29 @@ export default function SchemaForm(props: SchemaFormProps) {
                       : null
                   }
                   value={values[field.id]}
+                  name={field.id}
                   id={field.id}
                   {...textFieldProps}
+                  onChange={handleChange}
+                  onBlur={handleFieldBlur(field.id)}
                 />
               );
             })}
           </Form>
         );
+
+        function handleFieldBlur(field: string) {
+          return function (e: any) {
+            props.updateCarList(
+              {
+                ...values,
+                [field]: e.target.value,
+              },
+              props.carIndex,
+            );
+            handleBlur(e);
+          };
+        }
       }}
     </Formik>
   );

@@ -6,7 +6,6 @@ import Avatar from '@material-ui/core/Avatar';
 import CardContent from '@material-ui/core/CardContent';
 import CardActions from '@material-ui/core/CardActions';
 import DeleteIcon from '@material-ui/icons/Delete';
-import AddIcon from '@material-ui/icons/Add';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import Button from '../../components/Button';
@@ -18,7 +17,7 @@ interface CardCardProps {
   onRemoveCarClick: any;
   // TODO: improve type ?
   children: JSX.Element;
-  formId: string;
+  isDisabled: boolean;
 }
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -29,6 +28,14 @@ const useStyles = makeStyles((theme: Theme) =>
     deleteButton: {
       marginLeft: 'auto',
     },
+    cardActions: {},
+    avatar: {
+      color: 'rgba(0, 0, 0, .5)',
+      background: 'none',
+    },
+    disabledCard: {
+      opacity: 0.7,
+    },
   }),
 );
 
@@ -37,30 +44,34 @@ export default function CarCard({
   index,
   onRemoveCarClick,
   children,
-  formId,
+  isDisabled,
 }: CardCardProps) {
   const classes = useStyles();
-  // TODO: double check how reliable this is
-  const isEmpty = car.licensePlate === '';
+  const isEmpty = car.licensePlate === '' && car.carModel === '';
 
   // TODO: "Deleting..."
   // TODO: clean up form Id
   return (
-    <Card square variant="outlined">
+    <Card
+      className={isDisabled ? classes.disabledCard : undefined}
+      square
+      variant="outlined"
+    >
       <CardHeader
         avatar={
-          <Avatar variant="square" aria-label="number">
-            {isEmpty ? <AddIcon /> : <span>#{index}</span>}
+          <Avatar
+            className={classes.avatar}
+            variant="square"
+            aria-label="number"
+          >
+            <span>#{index + 1}</span>
           </Avatar>
         }
-        title={car.carModel}
+        title={car.carModel || 'New Car'}
         subheader={car.licensePlate}
       />
       <CardContent>{children}</CardContent>
-      <CardActions disableSpacing>
-        <Button form={formId} type="submit">
-          Save
-        </Button>
+      <CardActions className={classes.cardActions}>
         {!isEmpty && (
           <Button
             // TODO: isSubmitting
@@ -69,9 +80,9 @@ export default function CarCard({
             variant="text"
             color="default"
             icon={<DeleteIcon />}
-            onClick={onRemoveCarClick(car)}
+            onClick={onRemoveCarClick(index)}
           >
-            Delete
+            Remove
           </Button>
         )}
       </CardActions>

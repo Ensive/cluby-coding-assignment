@@ -5,7 +5,7 @@ import type { PropTypes } from '@material-ui/core';
 interface ButtonProps {
   color?: PropTypes.Color;
   variant?: 'text' | 'outlined' | 'contained';
-  children: ReactChildren | string;
+  children: ReactChildren | JSX.Element | string;
   style?: CSSProperties;
   className?: string;
   onClick?: React.MouseEventHandler;

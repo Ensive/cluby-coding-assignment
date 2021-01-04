@@ -2,20 +2,52 @@ import React, { useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import { useAlert } from 'react-alert';
 import { v4 as uuidv4 } from 'uuid';
-import type { FormikValues } from 'formik';
 
 // material
 import Grid from '@material-ui/core/Grid';
 import CircularProgress from '@material-ui/core/CircularProgress';
+import Box from '@material-ui/core/Box';
+import Fab from '@material-ui/core/Fab';
+import AddIcon from '@material-ui/icons/Add';
+import SaveIcon from '@material-ui/icons/Save';
+import HistoryIcon from '@material-ui/icons/History';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 // source
 import { API_HOST_URL, authHeadersRequestConfig } from '../../global/constants';
+import Button from '../../components/Button';
 import SchemaForm from '../../components/SchemaForm';
 import CarCard from './CarCard';
 import type { Schema } from '../../global/types';
 import type { ICar } from './types';
 
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    buttonsContainer: {
+      marginBottom: theme.spacing(2),
+    },
+    saveChangesButton: {
+      marginLeft: 'auto',
+    },
+    addCarButton: {
+      marginLeft: theme.spacing(1),
+    },
+    revertChangesButton: {
+      marginLeft: theme.spacing(1),
+    },
+    addCarFabButton: {
+      // margin: '16px 0 0 16px',
+    },
+  }),
+);
+
+// TODO: shall we optimize this?
+// in memory separate values (as state)
+let editedCarList: ICar[] = [];
+let initialCarList: ICar[] = [];
+
 export default function CarList() {
+  const classes = useStyles();
   const alert = useAlert();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -25,95 +57,139 @@ export default function CarList() {
     title: '',
   });
   const [carList, setCarList] = useState<ICar[]>([]);
+  const [saveInProgress, setSaveInProgress] = useState<boolean>(false);
+  // const [disableSaveButton, setDisableSaveButton] = useState(false);
 
   useEffect(() => {
     loadPageData();
   }, []);
 
-  // TODO: shall we get rid of error state entirely?
+  useEffect(() => {
+    editedCarList = [...carList];
+  }, [carList]);
+
   if (error) {
     alert.error(`Error: ${error}`);
     return <div>Please, refresh the page</div>;
   }
 
   if (loading) {
-    // TODO: replace with loading skeleton ?
     return <CircularProgress disableShrink />;
   }
 
   // TODO: shall we use react transitions for card appearing?
   return (
     <>
+      <Box display="flex" className={classes.buttonsContainer}>
+        <Button
+          className={classes.saveChangesButton}
+          icon={saveInProgress ? undefined : <SaveIcon />}
+          onClick={handleCarListSave}
+          disabled={saveInProgress}
+        >
+          {saveInProgress ? (
+            <CircularProgress size={24} color="inherit" disableShrink />
+          ) : (
+            'Save changes'
+          )}
+        </Button>
+        <Button
+          color="default"
+          className={classes.addCarButton}
+          icon={<AddIcon />}
+          onClick={handleAddCarClick}
+          disabled={saveInProgress}
+        >
+          New Car
+        </Button>
+        <Button
+          color="default"
+          className={classes.revertChangesButton}
+          icon={<HistoryIcon />}
+          onClick={handleRevertChanges}
+          disabled={saveInProgress}
+        >
+          Revert Changes
+        </Button>
+      </Box>
       <Grid container spacing={2}>
         {carList.map((car, index) => {
           // TODO: clean up form id
           const formId = uuidv4();
           return (
             <Grid item key={uuidv4()} xs={12} sm={6} md={6} lg={4} xl={3}>
+              {/* TODO: shall we render Schema Form inside of CarCard component to reduce duplication and improve clarity/readability */}
               <CarCard
                 car={car}
-                index={index + 1}
+                index={index}
                 onRemoveCarClick={handleRemoveCarClick}
-                formId={formId}
+                isDisabled={saveInProgress}
               >
                 <SchemaForm
                   formId={formId}
                   schema={carsSchema}
-                  onSubmit={handleCarListUpdate}
+                  updateCarList={handleCarListUpdate}
                   initialValues={{
                     carModel: car.carModel,
                     licensePlate: car.licensePlate,
                   }}
+                  isDisabled={saveInProgress}
+                  carIndex={index}
                 />
               </CarCard>
             </Grid>
           );
         })}
-        {renderNewCarCard()}
+        {renderAddCarButton()}
       </Grid>
     </>
   );
 
-  function renderNewCarCard() {
-    const formId = uuidv4();
+  function renderAddCarButton() {
     return (
       <Grid item key={uuidv4()} xs={12} sm={6} md={6} lg={4} xl={3}>
-        <CarCard
-          car={{
-            carModel: 'New Car',
-            licensePlate: '',
-          }}
-          index={carList.length + 1}
-          onRemoveCarClick={handleRemoveCarClick}
-          formId={formId}
+        <Fab
+          size="small"
+          className={classes.addCarFabButton}
+          color="primary"
+          onClick={handleAddCarClick}
         >
-          <SchemaForm
-            formId={formId}
-            schema={carsSchema}
-            onSubmit={handleNewCarSubmit}
-          />
-        </CarCard>
+          <AddIcon />
+        </Fab>
       </Grid>
     );
   }
 
-  function handleCarListUpdate(values: FormikValues) {
-    debugger;
+  function handleCarListUpdate(newCar: ICar, carIndex: number) {
+    editedCarList[carIndex] = newCar;
   }
 
-  function handleNewCarSubmit(values: FormikValues) {
-    console.log('values : >>', values);
-    const { carModel, licensePlate } = values;
-    saveNewCar({
-      carModel,
-      licensePlate,
-    });
+  function handleAddCarClick() {
+    setCarList([
+      ...editedCarList,
+      {
+        carModel: '',
+        licensePlate: '',
+      },
+    ]);
   }
 
-  function handleRemoveCarClick(car: ICar) {
+  function handleRemoveCarClick(carIndex: number) {
     return function (e: React.MouseEvent<HTMLButtonElement>) {
-      console.log(e);
+      editedCarList = [
+        ...editedCarList.slice(0, carIndex),
+        ...editedCarList.slice(carIndex + 1, editedCarList.length),
+      ];
+      setCarList(editedCarList);
     };
+  }
+
+  function handleRevertChanges() {
+    setCarList([...initialCarList]);
+  }
+
+  function handleCarListSave(e: React.MouseEvent<HTMLButtonElement>) {
+    saveCarList(editedCarList);
   }
 
   // TODO: refactor axios out to a separate HTTP module class
@@ -145,26 +221,28 @@ export default function CarList() {
     }> = await axios.get(`${API_HOST_URL}/data/cars`, authHeadersRequestConfig);
 
     setCarList(response.data.data);
+    initialCarList = response.data.data;
   }
 
-  async function saveNewCar(newCar: ICar) {
+  async function saveCarList(newCarList: ICar[]) {
     try {
+      setSaveInProgress(true);
       const response = await axios.post(
         `${API_HOST_URL}/data/cars`,
-        [...carList, newCar],
+        newCarList,
         authHeadersRequestConfig,
       );
 
-      console.log('response : >>', response);
-
       if (!response.data.error) {
-        // TODO: custom message ?
-        alert.success(`New car "${newCar.carModel}" was added`);
+        alert.success(`Car list was successfully updated`);
+        setCarList(editedCarList);
       } else {
         alert.error(response.data.error);
       }
-    } catch (e) {
-      alert.error(e);
+    } catch (e: any) {
+      alert.error(e.message);
+    } finally {
+      setSaveInProgress(false);
     }
   }
 }

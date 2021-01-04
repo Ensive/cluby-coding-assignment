@@ -29,8 +29,7 @@ const useStyles = makeStyles((theme: Theme) =>
       minWidth: 200,
       marginBottom: theme.spacing(4),
     },
-    schemaSelect: {
-    },
+    schemaSelect: {},
   }),
 );
 
