@@ -23,30 +23,32 @@ interface SchemaFormProps {
     carModel: string;
     licensePlate: string;
   };
-  // TODO: delete formId usage
-  formId: string;
-  // updateCarList: (newCar: { [p: string]: any }, carIndex: number) => void;
   // TODO: typescript
   updateCarList: any;
   carIndex: number;
   isDisabled: boolean;
+  onCarFormsValidation: (carIndex: number, isValid: boolean) => void;
 }
 
-export default function SchemaForm(props: SchemaFormProps) {
+export default function SchemaForm({
+  schema,
+  initialValues,
+  updateCarList,
+  carIndex,
+  isDisabled,
+  onCarFormsValidation,
+}: SchemaFormProps) {
   const classes = useStyles();
-  // TODO: avoid using variables
-  const validationSchema = getValidationSchema(props.schema.fields);
-  const initialValues =
-    props.initialValues || getInitialValues(props.schema.fields);
+  const validationSchema = getValidationSchema(schema.fields);
 
   return (
     <Formik
       validationSchema={validationSchema}
       initialValues={initialValues}
       // no op
-      onSubmit={(values) => {
+      onSubmit={() => {
         // TODO: delete
-        console.log('values : >>', values);
+        // console.log('values : >>', values);
       }}
     >
       {({
@@ -55,17 +57,22 @@ export default function SchemaForm(props: SchemaFormProps) {
         touched,
         handleChange,
         handleBlur,
+        isValid,
       }: FormikProps<FormikValues>) => {
+        onCarFormsValidation(
+          carIndex,
+          Boolean(isValid && values.carModel && values.licensePlate),
+        );
         const textFieldProps: TextFieldProps = {
           className: classes.textField,
           variant: 'filled',
-          disabled: props.isDisabled,
+          disabled: isDisabled,
           fullWidth: true,
         };
 
         return (
-          <Form id={props.formId}>
-            {props.schema.fields.map((field) => {
+          <Form>
+            {schema.fields.map((field) => {
               return (
                 <TextField
                   key={field.id}
@@ -90,12 +97,12 @@ export default function SchemaForm(props: SchemaFormProps) {
 
         function handleFieldBlur(field: string) {
           return function (e: any) {
-            props.updateCarList(
+            updateCarList(
               {
                 ...values,
                 [field]: e.target.value,
               },
-              props.carIndex,
+              carIndex,
             );
             handleBlur(e);
           };
@@ -131,13 +138,4 @@ export function getValidationSchema(fields: SchemaField[]) {
   }, {});
 
   return yup.object().shape(fieldsValidation);
-}
-
-function getInitialValues(fields: SchemaField[]) {
-  return fields.reduce((accumulator, field: SchemaField) => {
-    return {
-      ...accumulator,
-      [field.id]: '',
-    };
-  }, {});
 }

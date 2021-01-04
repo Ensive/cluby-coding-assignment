@@ -14,6 +14,7 @@ interface ButtonProps {
   size?: 'small' | 'medium' | 'large';
   type?: 'button' | 'submit' | 'reset';
   form?: string;
+  fullWidth?: boolean;
 }
 
 export default function Button({
@@ -28,6 +29,7 @@ export default function Button({
   size,
   type = 'button',
   form,
+  fullWidth,
 }: ButtonProps): JSX.Element {
   const buttonProps = {
     variant: variant || 'contained',
@@ -40,6 +42,7 @@ export default function Button({
     size,
     type,
     form,
+    fullWidth,
   };
 
   return (

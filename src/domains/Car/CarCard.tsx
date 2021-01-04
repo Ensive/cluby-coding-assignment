@@ -13,7 +13,7 @@ import type { ICar } from './types';
 
 interface CardCardProps {
   car: ICar;
-  index: number;
+  carIndex: number;
   onRemoveCarClick: any;
   // TODO: improve type ?
   children: JSX.Element;
@@ -39,9 +39,9 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-export default function CarCard({
+function CarCard({
   car,
-  index,
+  carIndex,
   onRemoveCarClick,
   children,
   isDisabled,
@@ -49,7 +49,6 @@ export default function CarCard({
   const classes = useStyles();
   const isEmpty = car.licensePlate === '' && car.carModel === '';
 
-  // TODO: "Deleting..."
   // TODO: clean up form Id
   return (
     <Card
@@ -64,28 +63,40 @@ export default function CarCard({
             variant="square"
             aria-label="number"
           >
-            <span>#{index + 1}</span>
+            <span>#{carIndex + 1}</span>
           </Avatar>
         }
-        title={car.carModel || 'New Car'}
+        title={isEmpty ? 'New Car' : car.carModel}
         subheader={car.licensePlate}
       />
       <CardContent>{children}</CardContent>
       <CardActions className={classes.cardActions}>
-        {!isEmpty && (
-          <Button
-            // TODO: isSubmitting
-            className={classes.deleteButton}
-            size="small"
-            variant="text"
-            color="default"
-            icon={<DeleteIcon />}
-            onClick={onRemoveCarClick(index)}
-          >
-            Remove
-          </Button>
-        )}
+        <Button
+          // TODO: isSubmitting
+          className={classes.deleteButton}
+          size="small"
+          variant="text"
+          color="default"
+          icon={<DeleteIcon />}
+          onClick={onRemoveCarClick(carIndex)}
+        >
+          Remove
+        </Button>
       </CardActions>
     </Card>
+  );
+}
+
+export default React.memo(CarCard, areEqual);
+
+function areEqual(prevProps: CardCardProps, nextProps: CardCardProps) {
+  // this is to rerender empty forms anyway
+  // if (prevProps.car.carModel === '' && nextProps.car.licensePlate === '') {
+  //   return false;
+  // }
+
+  return (
+    prevProps.car === nextProps.car &&
+    prevProps.isDisabled === nextProps.isDisabled
   );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios, { AxiosResponse } from 'axios';
 import { useAlert } from 'react-alert';
-import { v4 as uuidv4 } from 'uuid';
+import clsx from 'clsx';
 
 // material
 import Grid from '@material-ui/core/Grid';
@@ -11,7 +11,13 @@ import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
 import SaveIcon from '@material-ui/icons/Save';
 import HistoryIcon from '@material-ui/icons/History';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import {
+  createStyles,
+  makeStyles,
+  Theme,
+  useTheme,
+} from '@material-ui/core/styles';
 
 // source
 import { API_HOST_URL, authHeadersRequestConfig } from '../../global/constants';
@@ -19,7 +25,7 @@ import Button from '../../components/Button';
 import SchemaForm from '../../components/SchemaForm';
 import CarCard from './CarCard';
 import type { Schema } from '../../global/types';
-import type { ICar } from './types';
+import type { CarFormValidation, ICar } from './types';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -35,6 +41,12 @@ const useStyles = makeStyles((theme: Theme) =>
     revertChangesButton: {
       marginLeft: theme.spacing(1),
     },
+    mobileButton: {
+      margin: `0 0 ${theme.spacing(1)}px`,
+      '&:last-child': {
+        margin: 0,
+      },
+    },
     addCarFabButton: {
       // margin: '16px 0 0 16px',
     },
@@ -42,11 +54,14 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 // TODO: shall we optimize this?
-// in memory separate values (as state)
+// in memory values, serves as intermediate state.
 let editedCarList: ICar[] = [];
 let initialCarList: ICar[] = [];
+let carFormsValidationObject: CarFormValidation = {};
 
 export default function CarList() {
+  const theme = useTheme();
+  const matchesXs = useMediaQuery(theme.breakpoints.down('xs'));
   const classes = useStyles();
   const alert = useAlert();
   const [loading, setLoading] = useState<boolean>(true);
@@ -80,9 +95,15 @@ export default function CarList() {
   // TODO: shall we use react transitions for card appearing?
   return (
     <>
-      <Box display="flex" className={classes.buttonsContainer}>
+      <Box
+        display={matchesXs ? 'block' : 'flex'}
+        className={classes.buttonsContainer}
+      >
         <Button
-          className={classes.saveChangesButton}
+          fullWidth={matchesXs}
+          className={clsx(classes.saveChangesButton, {
+            [classes.mobileButton]: matchesXs,
+          })}
           icon={saveInProgress ? undefined : <SaveIcon />}
           onClick={handleCarListSave}
           disabled={saveInProgress}
@@ -94,8 +115,11 @@ export default function CarList() {
           )}
         </Button>
         <Button
+          fullWidth={matchesXs}
           color="default"
-          className={classes.addCarButton}
+          className={clsx(classes.addCarButton, {
+            [classes.mobileButton]: matchesXs,
+          })}
           icon={<AddIcon />}
           onClick={handleAddCarClick}
           disabled={saveInProgress}
@@ -103,8 +127,11 @@ export default function CarList() {
           New Car
         </Button>
         <Button
+          fullWidth={matchesXs}
           color="default"
-          className={classes.revertChangesButton}
+          className={clsx(classes.revertChangesButton, {
+            [classes.mobileButton]: matchesXs,
+          })}
           icon={<HistoryIcon />}
           onClick={handleRevertChanges}
           disabled={saveInProgress}
@@ -115,18 +142,16 @@ export default function CarList() {
       <Grid container spacing={2}>
         {carList.map((car, index) => {
           // TODO: clean up form id
-          const formId = uuidv4();
           return (
-            <Grid item key={uuidv4()} xs={12} sm={6} md={6} lg={4} xl={3}>
+            <Grid item key={index} xs={12} sm={6} md={6} lg={4} xl={3}>
               {/* TODO: shall we render Schema Form inside of CarCard component to reduce duplication and improve clarity/readability */}
               <CarCard
                 car={car}
-                index={index}
+                carIndex={index}
                 onRemoveCarClick={handleRemoveCarClick}
                 isDisabled={saveInProgress}
               >
                 <SchemaForm
-                  formId={formId}
                   schema={carsSchema}
                   updateCarList={handleCarListUpdate}
                   initialValues={{
@@ -135,6 +160,7 @@ export default function CarList() {
                   }}
                   isDisabled={saveInProgress}
                   carIndex={index}
+                  onCarFormsValidation={handleCarFormsValidation}
                 />
               </CarCard>
             </Grid>
@@ -147,7 +173,7 @@ export default function CarList() {
 
   function renderAddCarButton() {
     return (
-      <Grid item key={uuidv4()} xs={12} sm={6} md={6} lg={4} xl={3}>
+      <Grid item xs={12} sm={6} md={6} lg={4} xl={3}>
         <Fab
           size="small"
           className={classes.addCarFabButton}
@@ -181,6 +207,7 @@ export default function CarList() {
         ...editedCarList.slice(carIndex + 1, editedCarList.length),
       ];
       setCarList(editedCarList);
+      delete carFormsValidationObject[carIndex];
     };
   }
 
@@ -189,7 +216,16 @@ export default function CarList() {
   }
 
   function handleCarListSave(e: React.MouseEvent<HTMLButtonElement>) {
-    saveCarList(editedCarList);
+    if (checkAllFormsValid(carFormsValidationObject)) {
+      saveCarList(editedCarList);
+    } else {
+      // setCarList(editedCarList);
+      alert.error('Please check if all inputs for listed cars are valid');
+    }
+  }
+
+  function handleCarFormsValidation(carIndex: number, isValid: boolean) {
+    carFormsValidationObject[carIndex] = isValid;
   }
 
   // TODO: refactor axios out to a separate HTTP module class
@@ -236,6 +272,8 @@ export default function CarList() {
       if (!response.data.error) {
         alert.success(`Car list was successfully updated`);
         setCarList(editedCarList);
+        // reset initial values after updating list on the backend
+        initialCarList = editedCarList;
       } else {
         alert.error(response.data.error);
       }
@@ -245,4 +283,14 @@ export default function CarList() {
       setSaveInProgress(false);
     }
   }
+}
+
+function checkAllFormsValid(formsList: CarFormValidation): boolean {
+  const formsCount = Object.keys(formsList).length;
+
+  for (let i = 0; i < formsCount; i++) {
+    if (!formsList[i]) return false;
+  }
+
+  return true;
 }

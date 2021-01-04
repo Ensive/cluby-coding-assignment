@@ -99,6 +99,7 @@ export default function App(): JSX.Element {
     );
   }
 
+  // TODO: move to a separate FILE
   function renderSchemaSelect() {
     return (
       <div>
