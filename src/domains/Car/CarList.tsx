@@ -130,6 +130,7 @@ export default function CarList() {
 
   function handleRevertChanges() {
     setCarList([...initialCarList]);
+    carFormsValidationObject = {};
   }
 
   function handleCarListSave() {
