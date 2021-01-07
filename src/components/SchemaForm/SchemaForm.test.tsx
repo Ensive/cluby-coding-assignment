@@ -19,25 +19,26 @@ const carSchemaMock = {
   title: 'My car list',
 };
 
-let updateCarListMock: () => void;
-let onCarFormsValidationMock: () => void;
+let updateItemListMock: () => void;
+let onFormsValidationMock: () => void;
 let schemaFormPropsMock: any;
+let initialValues: any;
 
 beforeEach(() => {
-  updateCarListMock = jest.fn();
-  onCarFormsValidationMock = jest.fn();
-  const initialValues = {
+  updateItemListMock = jest.fn();
+  onFormsValidationMock = jest.fn();
+  initialValues = {
     carModel: 'BMW M5',
     licensePlate: 'XX-555',
   };
 
   schemaFormPropsMock = {
     schema: carSchemaMock,
-    updateCarList: updateCarListMock,
+    updateItemList: updateItemListMock,
     initialValues,
-    onCarFormsValidation: onCarFormsValidationMock,
+    onFormsValidation: onFormsValidationMock,
     isDisabled: false,
-    carIndex: 1,
+    itemIndex: 1,
   };
 });
 
@@ -45,10 +46,10 @@ afterAll(() => {
   jest.clearAllMocks();
 });
 
-test('calls onCarFormsValidation() on render with relevant props', () => {
+test('calls onFormsValidation() on render with relevant props', () => {
   render(<SchemaForm {...schemaFormPropsMock} />);
 
-  expect(onCarFormsValidationMock).toBeCalledWith(1, true);
+  expect(onFormsValidationMock).toBeCalledWith(1, true, initialValues);
 });
 
 test('renders values in the forms based on props', () => {
