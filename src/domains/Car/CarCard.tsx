@@ -28,7 +28,6 @@ const useStyles = makeStyles((theme: Theme) =>
     deleteButton: {
       marginLeft: 'auto',
     },
-    cardActions: {},
     avatar: {
       color: 'rgba(0, 0, 0, .5)',
       background: 'none',
@@ -70,7 +69,7 @@ function CarCard({
         subheader={car.licensePlate}
       />
       <CardContent>{children}</CardContent>
-      <CardActions className={classes.cardActions}>
+      <CardActions>
         <Button
           // TODO: isSubmitting
           className={classes.deleteButton}

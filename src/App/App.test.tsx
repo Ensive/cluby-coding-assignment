@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
-import axios from 'axios';
+import http from '../services/Http';
 
 jest.mock('react-alert', () => ({
   useAlert: () => ({
@@ -14,7 +14,7 @@ jest.mock('react-alert', () => ({
 // TODO: can we do jest.mock('axios') ?
 beforeEach(() => {
   // @ts-ignore
-  axios.get = jest.fn(() =>
+  http.get = jest.fn(() =>
     Promise.resolve({
       data: {
         result: 'ok',
@@ -53,7 +53,7 @@ test('renders schema select after successful API key check', async () => {
 
 test('renders button with initial state if API key check is unsuccessful', async () => {
   // @ts-ignore
-  axios.get = jest.fn(() =>
+  http.get = jest.fn(() =>
     Promise.resolve({
       data: {
         error: 'Access denied',

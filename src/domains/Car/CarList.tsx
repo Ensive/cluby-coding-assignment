@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { useAlert } from 'react-alert';
 
 // material
@@ -9,20 +9,24 @@ import Fab from '@material-ui/core/Fab';
 import AddIcon from '@material-ui/icons/Add';
 
 // source
-import { API_HOST_URL, authHeadersRequestConfig } from '../../global/constants';
 import SchemaForm from '../../components/SchemaForm';
 import CarCard from './CarCard';
 import type { Schema } from '../../global/types';
-import type { CarFormValidation, ICar } from './types';
+import type { IFormValidation, ICar } from './types';
 import SchemaActions from '../../components/SchemaActions';
+import http from '../../services/Http';
+import { checkAllFormsValid } from '../../helpers/checkAllFormsValid';
+import { focusFormInput } from '../../helpers/focusFormInput';
 
 // TODO: shall we optimize this?
 // in memory values, serves as intermediate state.
 let editedCarList: ICar[] = [];
 let initialCarList: ICar[] = [];
-let carFormsValidationObject: CarFormValidation = {};
+let carFormsValidationObject: IFormValidation = {};
 
 export default function CarList() {
+  // TODO: use it to focus first element in a form?
+  // const inputEl = useRef<HTMLInputElement>(null);
   const alert = useAlert();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -33,7 +37,6 @@ export default function CarList() {
   });
   const [carList, setCarList] = useState<ICar[]>([]);
   const [saveInProgress, setSaveInProgress] = useState<boolean>(false);
-  // const [disableSaveButton, setDisableSaveButton] = useState(false);
 
   useEffect(() => {
     loadPageData();
@@ -41,6 +44,7 @@ export default function CarList() {
 
   useEffect(() => {
     editedCarList = [...carList];
+    focusFormInput();
   }, [carList]);
 
   if (error) {
@@ -57,13 +61,12 @@ export default function CarList() {
     <>
       <SchemaActions
         saveInProgress={saveInProgress}
-        onCarListSave={handleCarListSave}
-        onAddCarClick={handleAddCarClick}
+        onListSave={handleCarListSave}
+        onAddItemClick={handleAddCarClick}
         onRevertChanges={handleRevertChanges}
       />
       <Grid container spacing={2}>
         {carList.map((car, index) => {
-          // TODO: clean up form id
           return (
             <Grid item key={index} xs={12} sm={6} md={6} lg={4} xl={3}>
               {/* TODO: shall we render Schema Form inside of CarCard component to reduce duplication and improve clarity/readability */}
@@ -75,14 +78,14 @@ export default function CarList() {
               >
                 <SchemaForm
                   schema={carsSchema}
-                  updateCarList={handleCarListUpdate}
+                  updateItemList={handleCarListUpdate}
                   initialValues={{
                     carModel: car.carModel,
                     licensePlate: car.licensePlate,
                   }}
                   isDisabled={saveInProgress}
-                  carIndex={index}
-                  onCarFormsValidation={handleCarFormsValidation}
+                  itemIndex={index}
+                  onFormsValidation={handleCarFormsValidation}
                 />
               </CarCard>
             </Grid>
@@ -96,7 +99,12 @@ export default function CarList() {
   function renderAddCarButton() {
     return (
       <Grid item xs={12} sm={6} md={6} lg={4} xl={3}>
-        <Fab size="small" color="primary" onClick={handleAddCarClick}>
+        <Fab
+          disabled={saveInProgress}
+          size="small"
+          color="primary"
+          onClick={handleAddCarClick}
+        >
           <AddIcon />
         </Fab>
       </Grid>
@@ -137,13 +145,17 @@ export default function CarList() {
     if (checkAllFormsValid(carFormsValidationObject)) {
       saveCarList(editedCarList);
     } else {
-      // setCarList(editedCarList);
       alert.error('Please check if all inputs for listed cars are valid');
     }
   }
 
-  function handleCarFormsValidation(carIndex: number, isValid: boolean) {
-    carFormsValidationObject[carIndex] = isValid;
+  function handleCarFormsValidation(
+    itemIndex: number,
+    isValid: boolean,
+    values: any,
+  ) {
+    const hasValues = values.carModel && values.licensePlate;
+    carFormsValidationObject[itemIndex] = isValid && hasValues;
   }
 
   // TODO: refactor axios out to a separate HTTP module class
@@ -159,11 +171,7 @@ export default function CarList() {
   }
 
   async function loadCarsSchema(): Promise<any> {
-    const response: AxiosResponse<Schema> = await axios.get(
-      `${API_HOST_URL}/data/cars/schema`,
-      authHeadersRequestConfig,
-    );
-
+    const response: AxiosResponse<Schema> = await http.get('/data/cars/schema');
     setCarsSchema(response.data);
   }
 
@@ -172,7 +180,7 @@ export default function CarList() {
       data: ICar[];
       revision: number;
       schema: 'cars';
-    }> = await axios.get(`${API_HOST_URL}/data/cars`, authHeadersRequestConfig);
+    }> = await http.get('/data/cars');
 
     setCarList(response.data.data);
     initialCarList = response.data.data;
@@ -181,14 +189,10 @@ export default function CarList() {
   async function saveCarList(newCarList: ICar[]) {
     try {
       setSaveInProgress(true);
-      const response = await axios.post(
-        `${API_HOST_URL}/data/cars`,
-        newCarList,
-        authHeadersRequestConfig,
-      );
+      const response = await http.post('/data/cars', newCarList);
 
       if (!response.data.error) {
-        alert.success(`Car list was successfully updated`);
+        alert.success('Car list data was successfully updated');
         setCarList(editedCarList);
         // reset initial values after updating list on the backend
         initialCarList = editedCarList;
@@ -201,14 +205,4 @@ export default function CarList() {
       setSaveInProgress(false);
     }
   }
-}
-
-function checkAllFormsValid(formsList: CarFormValidation): boolean {
-  const formsCount = Object.keys(formsList).length;
-
-  for (let i = 0; i < formsCount; i++) {
-    if (!formsList[i]) return false;
-  }
-
-  return true;
 }

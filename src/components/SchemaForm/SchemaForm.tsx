@@ -1,12 +1,10 @@
 import React from 'react';
 import { Form, Formik, FormikProps, FormikValues } from 'formik';
-// TODO: shall we optimize yup imports?
-import * as yup from 'yup';
-
 import TextField from '@material-ui/core/TextField';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import type { TextFieldProps } from '@material-ui/core';
 
+import { getValidationSchema } from '../../helpers/getValidationSchema';
 import type { Schema, SchemaField } from '../../global/types';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -20,23 +18,22 @@ const useStyles = makeStyles((theme: Theme) =>
 interface SchemaFormProps {
   schema: Schema;
   initialValues: {
-    carModel: string;
-    licensePlate: string;
+    [p: string]: string;
   };
   // TODO: typescript
-  updateCarList: any;
-  carIndex: number;
+  updateItemList: any;
+  itemIndex: number;
   isDisabled: boolean;
-  onCarFormsValidation: (carIndex: number, isValid: boolean) => void;
+  onFormsValidation: (itemIndex: number, isValid: boolean, values: any) => void;
 }
 
 export default function SchemaForm({
   schema,
   initialValues,
-  updateCarList,
-  carIndex,
+  updateItemList,
+  itemIndex,
   isDisabled,
-  onCarFormsValidation,
+  onFormsValidation,
 }: SchemaFormProps) {
   const classes = useStyles();
   const validationSchema = getValidationSchema(schema.fields);
@@ -59,10 +56,7 @@ export default function SchemaForm({
         handleBlur,
         isValid,
       }: FormikProps<FormikValues>) => {
-        onCarFormsValidation(
-          carIndex,
-          Boolean(isValid && values.carModel && values.licensePlate),
-        );
+        onFormsValidation(itemIndex, isValid, values);
         const textFieldProps: TextFieldProps = {
           className: classes.textField,
           variant: 'filled',
@@ -97,12 +91,12 @@ export default function SchemaForm({
 
         function handleFieldBlur(field: string) {
           return function (e: any) {
-            updateCarList(
+            updateItemList(
               {
                 ...values,
                 [field]: e.target.value,
               },
-              carIndex,
+              itemIndex,
             );
             handleBlur(e);
           };
@@ -110,32 +104,4 @@ export default function SchemaForm({
       }}
     </Formik>
   );
-}
-
-export function getValidationSchema(fields: SchemaField[]) {
-  const fieldsValidation = fields.reduce((accumulator, field) => {
-    // TODO: refactor this out to props or normalize schema on frontend
-    const validationMessages: any = {
-      carModel: {
-        required: 'Car model is required',
-        validPattern: 'Car model is invalid',
-      },
-      licensePlate: {
-        required: 'License plate number is required',
-        validPattern:
-          'License plate is invalid. It should match the vehicle registration plates standards of Finland',
-      },
-    };
-    return {
-      ...accumulator,
-      [field.id]: yup
-        .string()
-        .required(validationMessages[field.id].required)
-        .matches(RegExp(field.validationRegex), {
-          message: validationMessages[field.id].validPattern,
-        }),
-    };
-  }, {});
-
-  return yup.object().shape(fieldsValidation);
 }

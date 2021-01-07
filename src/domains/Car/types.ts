@@ -3,6 +3,6 @@ export interface ICar {
   licensePlate: string;
 }
 
-export interface CarFormValidation {
+export interface IFormValidation {
   [p: string]: boolean;
 }

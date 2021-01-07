@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Switch, Route, useHistory } from 'react-router-dom';
 import { useAlert } from 'react-alert';
-import axios from 'axios';
 
 // material
 import AppBar from '@material-ui/core/AppBar';
@@ -14,9 +13,11 @@ import FormControl from '@material-ui/core/FormControl';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 // source
-import { API_HOST_URL, authHeadersRequestConfig } from '../global/constants';
-import CarList from '../domains/Car/CarList';
+import http from '../services/Http';
 import Button from '../components/Button';
+import CarList from '../domains/Car/CarList';
+import UuidList from '../domains/Uuid';
+// import QuestionnaireList from '../domains/QuestionnaireList';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -45,10 +46,6 @@ export default function App(): JSX.Element {
   const classes = useStyles();
 
   useEffect(() => {
-    // TODO: delete,
-    // setLogin(true);
-    // setSchema('cars');
-
     if (schema === 'none') {
       history.push('/');
     }
@@ -89,7 +86,7 @@ export default function App(): JSX.Element {
             <CarList />
           </Route>
           <Route exact path="/uuid">
-            Uuid Schema
+            <UuidList />
           </Route>
           <Route exact path="/questionnaire">
             Questionnaire Schema
@@ -133,14 +130,12 @@ export default function App(): JSX.Element {
     loginUser();
   }
 
+  // TODO: store login auth value in local storage for better UX
   async function loginUser() {
     setLoading(true);
 
     try {
-      const response = await axios.get(
-        `${API_HOST_URL}/authentication/test`,
-        authHeadersRequestConfig,
-      );
+      const response = await http.get('/authentication/test');
 
       if (response.data.result.toLowerCase() === 'ok') {
         alert.success('API key is valid');

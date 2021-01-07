@@ -22,7 +22,7 @@ const useStyles = makeStyles((theme: Theme) =>
     saveChangesButton: {
       marginLeft: 'auto',
     },
-    addCarButton: {
+    addItemButton: {
       marginLeft: theme.spacing(1),
     },
     revertChangesButton: {
@@ -39,15 +39,15 @@ const useStyles = makeStyles((theme: Theme) =>
 
 interface SchemaActionsProps {
   saveInProgress: boolean;
-  onCarListSave: () => void;
-  onAddCarClick: () => void;
+  onListSave: () => void;
+  onAddItemClick: () => void;
   onRevertChanges: () => void;
 }
 
 export default function SchemaActions({
   saveInProgress,
-  onCarListSave,
-  onAddCarClick,
+  onListSave,
+  onAddItemClick,
   onRevertChanges,
 }: SchemaActionsProps) {
   const theme = useTheme();
@@ -65,7 +65,7 @@ export default function SchemaActions({
           [classes.mobileButton]: matchesXs,
         })}
         icon={saveInProgress ? undefined : <SaveIcon />}
-        onClick={onCarListSave}
+        onClick={onListSave}
         disabled={saveInProgress}
       >
         {saveInProgress ? (
@@ -77,14 +77,14 @@ export default function SchemaActions({
       <Button
         fullWidth={matchesXs}
         color="default"
-        className={clsx(classes.addCarButton, {
+        className={clsx(classes.addItemButton, {
           [classes.mobileButton]: matchesXs,
         })}
         icon={<AddIcon />}
-        onClick={onAddCarClick}
+        onClick={onAddItemClick}
         disabled={saveInProgress}
       >
-        New Car
+        New item
       </Button>
       <Button
         fullWidth={matchesXs}
